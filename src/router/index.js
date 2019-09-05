@@ -18,8 +18,8 @@ export default new Router({
       }
     },
     {
-      // path: '/recipeDetail',
-      path: '/recipeDetail/:recipeId',
+      path: '/recipeDetail',
+      // path: '/recipeDetail/:recipeId',
       name: 'recipeInfo-page',
       component: recipeInfopage,
       meta: {

@@ -1,31 +1,42 @@
 <template>
     <div>
         <el-card shadow = "hover" class="tablebox">
-            <div v-loading="loading" v-if="isRefresh">
-                <el-table :data="tableData" style="width: 100%">
-                    <el-table-column label="Rank" align="center" width="100px">
-                        <template slot-scope="scope">
-                            {{ scope.$index + 1 }}
+            <el-collapse accordion @change="openItem" >
+                <template v-for="item in recipeList">
+                    <el-collapse-item :name="item.recipeId" :key="item.recipeId">
+                        
+                        <template slot="title">
+                            <div>
+                                <i class="el-icon-food" style="margin-right: 15px;color: #409EFF"></i>
+                                <el-divider direction="vertical"></el-divider>
+                                {{item.recipeName}}
+                            </div>
                         </template>
-                    </el-table-column>
-                    <el-table-column label="Userid" align="center">
-                        <template slot-scope="scope">
-                            <el-link :href="'#/user/'+scope.row.username+'?part=page-top'" :underline="false">
-                                {{ scope.row.username }}
-                            </el-link>
-                        </template>
-                    </el-table-column>
-                    <el-table-column label="Username" align="center">
-                        <template slot-scope="scope">
-                            <el-link :href="'#/user/'+scope.row.username+'?part=page-top'" :underline="false">
-                                <b :style="'font-weight: 900;color:'+getColorForRating(scope.row.rating)">{{ scope.row.nickname }}</b>
-                            </el-link>
-                        </template>
-                    </el-table-column>
-                    
-
-                </el-table>
-            </div>
+                        <div>
+                            <template v-if="activeNames == item.recipeId">
+                                <template v-if="loading">
+                                    <i class="el-icon-loading"></i> Loading...
+                                </template>
+                                <template v-else>
+                                    <span>
+                                        <div style="font-size:20px;margin-left:20px">{{item.recipeName}}</div>
+                                        <el-rate max="10" disabled="true" v-model="recipeScore"></el-rate>
+                                    </span>
+                                    <div v-for="steps in recipeStepsInfo" :key="steps.stepId">
+                                        <el-card shadow = "hover">
+                                            步骤{{steps.stepId}} . {{steps.stepDes}}
+                                        </el-card>
+                                    </div>
+                                    <div v-for="comments in recipeComments" :key="comments.userId">
+                                        用户{{comments.userId}}:{{comments.commentContent}}
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+            
+                    </el-collapse-item>
+                </template>
+            </el-collapse>
         </el-card>
     </div>
 </template>
@@ -39,32 +50,71 @@ export default {
         return{
             loading: true,
             isRefresh: true,
-            recipeId :'',
-            recipeInfo: [],
+            recipeScore: 0,
+            recipeStepsInfo: [],
+            recipeComments: [],
+            recipeList:[],
+            clientHeight: window.innerHeight,
+            clientWidth: window.innerWidth,
+            activeNames: -1,
+        
         }
     },
     methods: {
-        pageInit () {
-            this.recipeId = this.$route.params.recipeId
+        
+        openItem (activeNames) {
+            this.activeNames = activeNames
+            if (!activeNames) {
+                this.recipeStepsInfo = []
+                this.recipeComments = []
+                return
+            }
+            this.loading = true
+            this.recipeScore = this.recipeList
+            this.getRecipeStepsdata(activeNames)
+            this.getRecipeCOmmentsdata(activeNames)
         },
-        getdata(){
+
+        getRecipeStepsdata(recipeId){
             var api = this.$store.state.api
-            axios.get(api + '/recipe/getRecipeStepsByRecipeId?recipeId=' + this.recipeId)
+            axios.get(api + '/recipe/getRecipeStepsByRecipeId?recipeId=' + recipeId)
             .then(data=>{
-                this.recipeInfo = data.data.dataObj
+                this.recipeStepsInfo = data.data.dataObj
+                // this.loading = false
             },err=>{
-                // if (err.response) {
-                // this.$message.error(err.response.data.msg)
-                // }
                 alert(err)
             })
-        }
+        },
+        getRecipeCOmmentsdata(recipeId){
+            var api = this.$store.state.api
+            axios.get(api + '/recipe/getRecipeCommentsByRecipeId?recipeId=' + recipeId)
+            .then(data=>{
+                this.recipeComments = data.data.dataObj
+                this.loading = false
+            },err=>{
+                alert(err)
+            })
+        },
+        getRecipeListdata(){
+            var api = this.$store.state.api
+            axios.get(api + '/recipe/get_all_recipe_list')
+            .then(data=>{
+                this.recipeList = data.data.dataObj
+                // console.log(this.recipeList[0].contriUsr)
+            },err=>{
+                alert(err)
+            })
+        },
+        
 
     },
     created(){
-        this.pageInit()
-        this.getdata()
+        this.getRecipeListdata()
+        
     },
+    mounted(){
+        
+    }
 
 
 }
